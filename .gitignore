@@ -1,0 +1,16 @@
+# ESP-IDF build output
+build/
+
+# Generated config; the tracked source of truth is sdkconfig.defaults.
+# Also keeps WiFi credentials entered via menuconfig out of git.
+sdkconfig
+sdkconfig.old
+
+# Managed components are re-downloaded from idf_component.yml on build
+managed_components/
+
+# Editor / tooling
+.cache/
+.vscode/
+.idea/
+compile_commands.json

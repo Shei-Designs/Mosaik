@@ -1,0 +1,79 @@
+menu "LED Panel Configuration"
+
+    config PANEL_DATA_GPIO
+        int "WS2812B data GPIO"
+        default 12
+        help
+            GPIO driving the DIN of the first 8x32 panel in the chain.
+
+    config PANEL_MAX_CURRENT_MA
+        int "Maximum LED current budget (mA)"
+        default 10000
+        help
+            The driver estimates the current draw of every frame and scales
+            brightness down so this budget is never exceeded. Full white on
+            all 1024 LEDs is ~61000 mA; set this to what your power supply
+            and wiring can actually deliver, minus some margin.
+
+    menu "Panel mapping / orientation"
+
+        config PANEL_FLIP_X
+            bool "Flip X axis"
+            default n
+
+        config PANEL_FLIP_Y
+            bool "Flip Y axis"
+            default n
+
+        config PANEL_CHAIN_REVERSED
+            bool "Chain starts at the rightmost panel"
+            default n
+            help
+                The panels stand vertically side by side. Enable this if
+                the first panel of the chain (the one wired to the ESP32)
+                is the rightmost column instead of the leftmost.
+
+        config PANEL_ALTERNATE_PANEL_ROTATION
+            bool "Every second panel is rotated 180 degrees"
+            default y
+            help
+                The panels are chained with short connectors, which forces
+                every second panel to be mounted upside down. This matches
+                the physical build; disable only if all four panels are
+                mounted in the same orientation.
+
+    endmenu
+
+    menu "WiFi"
+
+        config PANEL_WIFI_SSID
+            string "WiFi SSID"
+            default ""
+            help
+                Leave empty to skip station mode and start the fallback
+                access point directly.
+
+        config PANEL_WIFI_PASSWORD
+            string "WiFi password"
+            default ""
+
+        config PANEL_HOSTNAME
+            string "mDNS hostname"
+            default "ledpanel"
+            help
+                The panel will be reachable at http://<hostname>.local
+
+        config PANEL_AP_SSID
+            string "Fallback access point SSID"
+            default "LED-Panel"
+
+        config PANEL_AP_PASSWORD
+            string "Fallback access point password"
+            default "ledpanel123"
+            help
+                Used when the panel cannot join your WiFi (or no SSID is
+                configured). Must be at least 8 characters (WPA2).
+
+    endmenu
+
+endmenu
