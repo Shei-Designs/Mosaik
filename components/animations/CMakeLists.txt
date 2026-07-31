@@ -1,7 +1,6 @@
 idf_component_register(
     SRCS
         "engine.cpp"
-        "anims/test_pattern.cpp"
         "anims/plasma.cpp"
         "anims/game_of_life.cpp"
         "anims/starfield.cpp"
@@ -12,6 +11,13 @@ idf_component_register(
         "anims/matrix_rain.cpp"
         "anims/boids.cpp"
         "anims/asteroids.cpp"
+        "anims/fireworks.cpp"
+        "anims/lava_lamp.cpp"
+        "anims/snake.cpp"
+        "anims/synthwave.cpp"
+        "anims/cube3d.cpp"
+        "anims/fractal_zoom.cpp"
+        "anims/bouncing_balls.cpp"
     INCLUDE_DIRS "include"
     REQUIRES panel
     PRIV_REQUIRES esp_timer nvs_flash

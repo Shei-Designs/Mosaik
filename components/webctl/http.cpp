@@ -4,8 +4,12 @@
 #include <cstring>
 
 #include "cJSON.h"
+#include "esp_app_desc.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
+#include "esp_ota_ops.h"
+#include "esp_system.h"
+#include "esp_timer.h"
 
 #include "animations/engine.hpp"
 #include "panel/driver.hpp"
@@ -35,6 +39,7 @@ static esp_err_t status_get(httpd_req_t* req) {
     cJSON_AddNumberToObject(root, "brightness", st.brightness);
     cJSON_AddNumberToObject(root, "speed", st.speed);
     cJSON_AddNumberToObject(root, "ma", panel::driver_last_frame_ma());
+    cJSON_AddStringToObject(root, "version", esp_app_get_description()->version);
     cJSON* list = cJSON_AddArrayToObject(root, "animations");
     for (int i = 0; i < anim::engine_animation_count(); i++) {
         cJSON_AddItemToArray(list, cJSON_CreateString(anim::engine_animation_name(i)));
@@ -139,6 +144,78 @@ static esp_err_t wifi_post(httpd_req_t* req) {
     return err;
 }
 
+static void restart_cb(void*) { esp_restart(); }
+
+static void restart_soon() {
+    // Delay the restart so the HTTP response makes it out first.
+    const esp_timer_create_args_t args = {
+        .callback = &restart_cb,
+        .arg = nullptr,
+        .dispatch_method = ESP_TIMER_TASK,
+        .name = "ota_restart",
+        .skip_unhandled_events = false,
+    };
+    static esp_timer_handle_t timer = nullptr;
+    if (!timer) {
+        ESP_ERROR_CHECK(esp_timer_create(&args, &timer));
+        ESP_ERROR_CHECK(esp_timer_start_once(timer, 1500 * 1000));
+    }
+}
+
+// POST /api/ota  body: raw application image (build/led_panel.bin).
+// Writes it to the inactive app slot, verifies it, marks it bootable and
+// restarts. If the new image fails to boot, the bootloader rolls back.
+static esp_err_t ota_post(httpd_req_t* req) {
+    const esp_partition_t* dst = esp_ota_get_next_update_partition(nullptr);
+    if (!dst) {
+        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "no OTA partition");
+    }
+    if (req->content_len == 0 || req->content_len > dst->size) {
+        return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "bad image size");
+    }
+    ESP_LOGI(TAG, "OTA: %u bytes -> %s", (unsigned)req->content_len, dst->label);
+
+    esp_ota_handle_t ota;
+    esp_err_t err = esp_ota_begin(dst, req->content_len, &ota);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_begin: %s", esp_err_to_name(err));
+        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "flash erase failed");
+    }
+
+    static uint8_t buf[4096];
+    size_t remaining = req->content_len;
+    while (remaining > 0) {
+        int r = httpd_req_recv(req, reinterpret_cast<char*>(buf),
+                               remaining < sizeof(buf) ? remaining : sizeof(buf));
+        if (r <= 0) {
+            esp_ota_abort(ota);
+            return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "recv failed");
+        }
+        if ((err = esp_ota_write(ota, buf, r)) != ESP_OK) {
+            ESP_LOGE(TAG, "esp_ota_write: %s", esp_err_to_name(err));
+            esp_ota_abort(ota);
+            return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "flash write failed");
+        }
+        remaining -= r;
+    }
+
+    if ((err = esp_ota_end(ota)) != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_end: %s", esp_err_to_name(err));
+        return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+                                   err == ESP_ERR_OTA_VALIDATE_FAILED ? "image validation failed"
+                                                                      : "flash finalize failed");
+    }
+    if ((err = esp_ota_set_boot_partition(dst)) != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_set_boot_partition: %s", esp_err_to_name(err));
+        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "set boot failed");
+    }
+
+    ESP_LOGI(TAG, "OTA ok, restarting into %s", dst->label);
+    err = httpd_resp_sendstr(req, "{\"ok\":true,\"restarting\":true}");
+    restart_soon();
+    return err;
+}
+
 void http_start() {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.stack_size = 8192;
@@ -154,6 +231,7 @@ void http_start() {
         {.uri = "/api/frame", .method = HTTP_POST, .handler = frame_post, .user_ctx = nullptr},
         {.uri = "/api/wifi", .method = HTTP_GET, .handler = wifi_get, .user_ctx = nullptr},
         {.uri = "/api/wifi", .method = HTTP_POST, .handler = wifi_post, .user_ctx = nullptr},
+        {.uri = "/api/ota", .method = HTTP_POST, .handler = ota_post, .user_ctx = nullptr},
     };
     for (auto& r : routes) {
         ESP_ERROR_CHECK(httpd_register_uri_handler(server, &r));

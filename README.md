@@ -9,10 +9,14 @@ UI served by the chip itself.
 - **Animation engine** running at ~30 FPS (the physical limit of 1024
   WS2812B LEDs on one data line) on core 1, RMT + DMA so WiFi can't glitch
   the strip timing.
-- **Animations**: Test Pattern, Plasma, Game of Life, Starfield, Fire,
+- **Animations**: Plasma, Game of Life, Starfield, Fire,
   Sorting (bubble/selection/insertion/quicksort), Maze (DFS carve + BFS
   solve), Langton's Ant, Matrix Rain, Boids (with a red predator that
-  hunts the flock's center of mass), Asteroids (self-playing), Pixel Art.
+  hunts the flock's center of mass), Asteroids (self-playing), Fireworks,
+  Lava Lamp (metaballs), Snake (self-playing, BFS pathfinding), Synthwave
+  (80s sunset + scrolling perspective grid), Cube (spinning 3D wireframe),
+  Fractal Zoom (Mandelbrot seahorse-valley dive), Bouncing Balls (physics
+  sim with ball-to-ball collisions), Pixel Art.
 - **Web UI** (mobile-first, embedded in flash): pick animations, brightness
   and speed sliders, a 32x32 pixel-art editor with live painting, and
   image upload (sprites are scaled to 32x32 with nearest-neighbor
@@ -33,6 +37,10 @@ UI served by the chip itself.
   supply.
 - Last animation, brightness, speed and pixel-art frame persist across
   reboots (NVS).
+- **OTA updates**: flash new firmware over WiFi from the web UI or with
+  `curl` — no USB cable needed after the initial flash. Two app slots with
+  bootloader rollback: if an update fails to boot, the panel automatically
+  falls back to the previous firmware.
 
 ## Building
 
@@ -45,6 +53,30 @@ idf.py -p /dev/ttyACM0 flash monitor
 
 The data GPIO defaults to **GPIO 12**. Change it in menuconfig if you wire
 DIN elsewhere.
+
+## OTA updates
+
+After the initial serial flash, updates go over WiFi:
+
+- **Web UI**: scroll to the **Firmware** section, tap *Update firmware…*
+  and pick `build/led_panel.bin`. The page shows upload progress and
+  reloads once the panel has restarted.
+- **Command line**:
+
+  ```sh
+  idf.py build
+  curl -X POST --data-binary @build/led_panel.bin http://ledpanel.local/api/ota
+  ```
+
+The image is written to the inactive app slot (`ota_0`/`ota_1`) and
+verified before the panel switches to it. The first boot of a new image is
+provisional: if it crashes before fully starting up, the bootloader rolls
+back to the previous firmware, so a bad update never leaves the panel
+unreachable. Uploading a non-firmware file is rejected by image validation.
+
+Note: moving to the OTA partition layout (or any later partition-table
+change) requires one flash over USB (`idf.py -p /dev/ttyACM0 flash`);
+the NVS partition is untouched, so WiFi credentials and settings survive.
 
 ## Wiring notes
 
@@ -69,12 +101,9 @@ panel's data enters bottom-left and climbs; a rotated one enters top-right
 and descends. The mapping in `components/panel/matrix.cpp` encodes exactly
 this.
 
-To verify after any physical change, select **Test Pattern** in the web UI:
-
-- red pixel = top-left, green = top-right, blue = bottom-left,
-  white = bottom-right
-- a cyan pixel scans left-to-right, top-to-bottom
-- dim columns mark the boundaries between the four panels
+To verify after a physical change, draw an asymmetric shape (e.g. an "F"
+in the top-left corner) in the web UI's pixel-art editor and check it
+appears where expected.
 
 If the picture is scrambled, fix it in `menuconfig` → LED Panel
 Configuration → *Panel mapping / orientation*:
@@ -95,6 +124,7 @@ Configuration → *Panel mapping / orientation*:
 | `/api/frame` | POST | raw 3072 bytes (RGB, row-major from top-left) | Show a pixel-art frame |
 | `/api/wifi` | GET | – | Connection mode, SSID, IP, hostname |
 | `/api/wifi` | POST | `{"ssid":"...","password":"..."}` | Save credentials and restart; empty SSID clears them |
+| `/api/ota` | POST | raw app image (`build/led_panel.bin`) | Flash to the inactive slot, verify, restart |
 
 Example from a laptop:
 

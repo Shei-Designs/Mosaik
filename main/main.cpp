@@ -1,4 +1,5 @@
 #include "esp_log.h"
+#include "esp_ota_ops.h"
 #include "nvs_flash.h"
 
 #include "panel/driver.hpp"
@@ -19,6 +20,10 @@ extern "C" void app_main() {
     anim::engine_start();
     webctl::wifi_start();
     webctl::http_start();
+
+    // Everything came up, so an OTA image that reached this point is good:
+    // confirm it so the bootloader stops considering a rollback.
+    esp_ota_mark_app_valid_cancel_rollback();
 
     ESP_LOGI(TAG, "LED panel up: %d animations registered", anim::engine_animation_count());
 }

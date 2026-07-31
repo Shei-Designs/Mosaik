@@ -45,6 +45,7 @@
     background: #171b24; color: #e8eaf0; font-size: 0.9rem;
   }
   #wifiinfo { color: #7a8194; font-size: 0.8rem; margin-bottom: 6px; }
+  #fwinfo { color: #7a8194; font-size: 0.8rem; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -84,6 +85,13 @@
   <input class="txt" id="wpass" type="password" placeholder="Password" maxlength="64">
   <div class="tools">
     <button id="wifisave" class="primary">Save &amp; restart panel</button>
+  </div>
+
+  <h2>Firmware</h2>
+  <div id="fwinfo">&hellip;</div>
+  <div class="tools">
+    <button id="otabtn">Update firmware&hellip;</button>
+    <input type="file" id="otafile" accept=".bin" hidden>
   </div>
 
   <div id="stat">connecting&hellip;</div>
@@ -234,6 +242,7 @@ async function refresh(full) {
     }
     current = s.anim;
     renderSel();
+    if (s.version && !otaBusy) $('fwinfo').textContent = `Running version ${s.version}`;
     stat(`${s.animations[s.anim]} · ~${(s.ma/1000).toFixed(1)} A`);
   } catch (e) { stat('offline?'); }
 }
@@ -269,6 +278,43 @@ $('wifisave').onclick = async () => {
         `reconnect your phone to that network, then open http://${hostname}.local`
       : 'Cleared. The panel is restarting.';
   } catch (e) { $('wifiinfo').textContent = 'Could not reach the panel.'; }
+};
+
+// ---- firmware update ----
+let otaBusy = false;
+
+$('otabtn').onclick = () => $('otafile').click();
+$('otafile').onchange = e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  if (!confirm(`Flash "${f.name}" (${(f.size/1024).toFixed(0)} KB) to the panel?`)) return;
+
+  otaBusy = true;
+  $('otabtn').disabled = true;
+  const info = t => { $('fwinfo').textContent = t; };
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/ota');
+  xhr.upload.onprogress = ev => {
+    if (ev.lengthComputable) info(`Uploading… ${(ev.loaded/ev.total*100).toFixed(0)} %`);
+  };
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      info('Flashed. The panel is restarting — this page reloads in 15 s.');
+      setTimeout(() => location.reload(), 15000);
+    } else {
+      info('Update rejected: ' + xhr.responseText);
+      otaBusy = false;
+      $('otabtn').disabled = false;
+    }
+  };
+  xhr.onerror = () => {
+    info('Upload failed — the panel is unchanged. Check the connection and retry.');
+    otaBusy = false;
+    $('otabtn').disabled = false;
+  };
+  xhr.send(f);
 };
 
 redraw();

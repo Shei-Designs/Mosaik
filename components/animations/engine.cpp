@@ -38,7 +38,6 @@ public:
 // ---------------------------------------------------------------------------
 // Registry. Factories live in the individual animation files.
 
-Animation* make_test_pattern();
 Animation* make_plasma();
 Animation* make_game_of_life();
 Animation* make_starfield();
@@ -49,11 +48,17 @@ Animation* make_langton();
 Animation* make_matrix_rain();
 Animation* make_boids();
 Animation* make_asteroids();
+Animation* make_fireworks();
+Animation* make_lava_lamp();
+Animation* make_snake();
+Animation* make_synthwave();
+Animation* make_cube3d();
+Animation* make_fractal_zoom();
+Animation* make_bouncing_balls();
 
 static Animation** registry() {
     static PixelArt art;
     static Animation* anims[] = {
-        make_test_pattern(),
         make_plasma(),
         make_game_of_life(),
         make_starfield(),
@@ -64,12 +69,19 @@ static Animation** registry() {
         make_matrix_rain(),
         make_boids(),
         make_asteroids(),
+        make_fireworks(),
+        make_lava_lamp(),
+        make_snake(),
+        make_synthwave(),
+        make_cube3d(),
+        make_fractal_zoom(),
+        make_bouncing_balls(),
         &art,
     };
     return anims;
 }
 
-static constexpr int kAnimCount = 12;
+static constexpr int kAnimCount = 18;
 static constexpr int kPixelArtIndex = kAnimCount - 1;
 
 // ---------------------------------------------------------------------------
