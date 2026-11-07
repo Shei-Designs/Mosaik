@@ -25,5 +25,5 @@ extern "C" void app_main() {
     // confirm it so the bootloader stops considering a rollback.
     esp_ota_mark_app_valid_cancel_rollback();
 
-    ESP_LOGI(TAG, "LED panel up: %d animations registered", anim::engine_animation_count());
+    ESP_LOGI(TAG, "Mosaik up: %d animations registered", anim::engine_animation_count());
 }

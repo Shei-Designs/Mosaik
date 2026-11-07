@@ -1,4 +1,4 @@
-menu "LED Panel Configuration"
+menu "Mosaik Configuration"
 
     config PANEL_DATA_GPIO
         int "WS2812B data GPIO"
@@ -59,17 +59,17 @@ menu "LED Panel Configuration"
 
         config PANEL_HOSTNAME
             string "mDNS hostname"
-            default "ledpanel"
+            default "mosaik"
             help
                 The panel will be reachable at http://<hostname>.local
 
         config PANEL_AP_SSID
             string "Fallback access point SSID"
-            default "LED-Panel"
+            default "Mosaik"
 
         config PANEL_AP_PASSWORD
             string "Fallback access point password"
-            default "ledpanel123"
+            default "mosaik123"
             help
                 Used when the panel cannot join your WiFi (or no SSID is
                 configured). Must be at least 8 characters (WPA2).

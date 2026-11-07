@@ -1,8 +1,20 @@
-# ESP32-S3 32x32 LED Panel
+<h1 align="center">
+  <img src="docs/banner.svg" alt="Mosaik: a 32 × 32 LED pixel panel you run from your phone" width="100%">
+</h1>
 
-Firmware for a 32x32 WS2812B matrix built from four chained AZ-Delivery
-8x32 flex panels, driven by an ESP32-S3. Controlled from a phone via a web
-UI served by the chip itself.
+**Mosaik** is a 320 × 320 mm wall panel of 1,024 RGB pixels: four 8 × 32 WS2812B
+flex panels sandwiched between a 3D-printed base and a grid that gives every
+LED its own square cell, behind a diffuser. An ESP32-S3 runs 17 generative
+animations (Game of Life, boids, maze solving, sorting algorithms,
+synthwave and more) and serves a web UI. From your phone you can pick an
+animation, paint pixel art or upload a sprite, and update the firmware over
+WiFi. No app is needed.
+
+Everything runs on the panel; nothing leaves your network. Open source
+under the MIT license, firmware and printable parts alike.
+
+Mosaik is a [Shei Designs](https://sheidesigns.com) project, designed and
+built by [Andrew O'Shei](https://andrewoshei.com).
 
 <p align="center">
   <img src="docs/images/webui-animations.png" width="32%" alt="Animation picker with brightness and speed sliders">
@@ -40,13 +52,13 @@ UI served by the chip itself.
   image upload (sprites are scaled to 32x32 with nearest-neighbor
   sampling, aspect ratio preserved).
 - **WiFi**: joins your network as a station; falls back to its own access
-  point (`LED-Panel` / `ledpanel123`, then browse to `http://192.168.4.1`)
-  if it can't. mDNS: `http://ledpanel.local`. Credentials can be set from
+  point (`Mosaik` / `mosaik123`, then browse to `http://192.168.4.1`)
+  if it can't. mDNS: `http://mosaik.local`. Credentials can be set from
   the web UI (stored in NVS, no reflash needed):
-  1. connect your phone to the `LED-Panel` access point,
+  1. connect your phone to the `Mosaik` access point,
   2. open `http://192.168.4.1`, scroll to the **WiFi** section,
   3. enter your network's SSID and password, tap *Save & restart panel*,
-  4. rejoin your own WiFi and open `http://ledpanel.local`.
+  4. rejoin your own WiFi and open `http://mosaik.local`.
   If the saved network is unreachable the panel returns to AP mode, so a
   typo can always be corrected the same way. Saving an empty SSID clears
   the stored credentials.
@@ -68,7 +80,7 @@ first build.
 
 ```sh
 source ~/esp/esp-idf/export.sh
-idf.py menuconfig        # -> "LED Panel Configuration": WiFi SSID/password, data GPIO
+idf.py menuconfig        # -> "Mosaik Configuration": WiFi SSID/password, data GPIO
 idf.py build
 idf.py -p /dev/ttyACM0 flash monitor
 ```
@@ -81,13 +93,13 @@ DIN elsewhere.
 After the initial serial flash, updates go over WiFi:
 
 - **Web UI**: scroll to the **Firmware** section, tap *Update firmware…*
-  and pick `build/led_panel.bin`. The page shows upload progress and
+  and pick `build/mosaik.bin`. The page shows upload progress and
   reloads once the panel has restarted.
 - **Command line**:
 
   ```sh
   idf.py build
-  curl -X POST --data-binary @build/led_panel.bin http://ledpanel.local/api/ota
+  curl -X POST --data-binary @build/mosaik.bin http://mosaik.local/api/ota
   ```
 
 The image is written to the inactive app slot (`ota_0`/`ota_1`) and
@@ -95,6 +107,13 @@ verified before the panel switches to it. The first boot of a new image is
 provisional: if it crashes before fully starting up, the bootloader rolls
 back to the previous firmware, so a bad update never leaves the panel
 unreachable. Uploading a non-firmware file is rejected by image validation.
+
+Upgrading from v1.0.0, which was still called "LED Panel": new builds
+use the hostname `mosaik` (`http://mosaik.local`) and the setup network
+`Mosaik` / `mosaik123`. Settings already in your `sdkconfig` are kept,
+so an existing build keeps `ledpanel` until you change it in
+`idf.py menuconfig` → *Mosaik Configuration* → *WiFi*. Saved WiFi
+credentials are not affected.
 
 Note: moving to the OTA partition layout (or any later partition-table
 change) requires one flash over USB (`idf.py -p /dev/ttyACM0 flash`);
@@ -127,7 +146,7 @@ To verify after a physical change, draw an asymmetric shape (e.g. an "F"
 in the top-left corner) in the web UI's pixel-art editor and check it
 appears where expected.
 
-If the picture is scrambled, fix it in `menuconfig` → LED Panel
+If the picture is scrambled, fix it in `menuconfig` → Mosaik
 Configuration → *Panel mapping / orientation*:
 
 | Symptom | Fix |
@@ -146,12 +165,12 @@ Configuration → *Panel mapping / orientation*:
 | `/api/frame` | POST | raw 3072 bytes (RGB, row-major from top-left) | Show a pixel-art frame |
 | `/api/wifi` | GET | – | Connection mode, SSID, IP, hostname |
 | `/api/wifi` | POST | `{"ssid":"...","password":"..."}` | Save credentials and restart; empty SSID clears them |
-| `/api/ota` | POST | raw app image (`build/led_panel.bin`) | Flash to the inactive slot, verify, restart |
+| `/api/ota` | POST | raw app image (`build/mosaik.bin`) | Flash to the inactive slot, verify, restart |
 
 Example from a laptop:
 
 ```sh
-curl -X POST http://ledpanel.local/api/state -d '{"anim":1}'
+curl -X POST http://mosaik.local/api/state -d '{"anim":1}'
 ```
 
 ## Project layout
@@ -162,6 +181,11 @@ components/panel/      framebuffer, XY->strip serpentine mapping, RMT/DMA driver
                        gamma + current limiting
 components/animations/ engine (FreeRTOS task) + one file per animation
 components/webctl/     WiFi + mDNS + HTTP server + embedded web UI
+                       (web/: page, tile icon, brand fonts)
+3D_print_assets/       STLs for the printed frame, pixel grids and diffusers
+docs/                  BOM, build guide, screenshots
+docs/brand/            icon, banner and social preview; regenerate with
+                       `python3 docs/brand/draw.py`
 ```
 
 ### Adding an animation
@@ -179,4 +203,7 @@ speed control for free.
 
 ## License
 
-[MIT](LICENSE). Covers the firmware and the 3D-printable parts.
+[MIT](LICENSE). Covers the firmware and the 3D-printable parts. The web
+UI embeds the Inter, Space Grotesk and JetBrains Mono fonts, which are
+under the SIL Open Font License
+([`components/webctl/web/fonts/licenses/`](components/webctl/web/fonts/licenses)).

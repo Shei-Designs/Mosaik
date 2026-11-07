@@ -3,73 +3,138 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>LED Panel</title>
+<meta name="theme-color" content="#110911">
+<title>Mosaik</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-180.png">
 <style>
-  :root { color-scheme: dark; }
+  /* The Shei Designs fonts, served by the panel itself (in access-point mode
+     the phone has no internet). SIL OFL, see fonts/licenses/. */
+  @font-face { font-family: Inter; font-weight: 400; font-display: swap; src: url(/fonts/inter-400.woff2) format('woff2'); }
+  @font-face { font-family: Inter; font-weight: 600; font-display: swap; src: url(/fonts/inter-600.woff2) format('woff2'); }
+  @font-face { font-family: 'Space Grotesk'; font-weight: 500; font-display: swap; src: url(/fonts/space-grotesk-500.woff2) format('woff2'); }
+  @font-face { font-family: 'JetBrains Mono'; font-weight: 400; font-display: swap; src: url(/fonts/jetbrains-mono-400.woff2) format('woff2'); }
+
+  :root {
+    /* The Shei Designs surfaces (Carbon, Slate, Iron, Linen, Dust) tinted a
+       few percent toward Mosaik's own Pixel purple. Two accents: the purple
+       is Mosaik's identity (what is selected, active, focused), Tape is the
+       house signal (the action to take). They never share a control. */
+    --bg: #110911;
+    --panel: #1c1319;
+    --control: #271c23;
+    --control-hover: #33252d;
+    --border: #32252b;
+    --text: #e7ded9;
+    --muted: #8c8085;
+    --accent: #c414ff;
+    --signal: #ff6b1a;
+    --signal-strong: #ff8440;
+    --on-signal: #0a0907;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: dark;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family: system-ui, -apple-system, sans-serif;
-    background: #0d0f14; color: #e8eaf0;
-    max-width: 480px; margin: 0 auto; padding: 16px 14px 40px;
+    font: 400 15px/1.5 Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    max-width: 480px; margin: 0 auto; padding: 20px 16px 32px;
   }
-  h1 { font-size: 1.15rem; margin-bottom: 2px; }
-  .sub { color: #7a8194; font-size: 0.8rem; margin-bottom: 16px; }
-  h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;
-       color: #9aa3b8; margin: 20px 0 8px; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Header: the tile and the product name, set in Space Grotesk as Shei
+     Designs sets product names (and nothing else). */
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  header img { width: 44px; height: 44px; }
+  h1 { font: 500 28px/1.1 'Space Grotesk', Inter, sans-serif; letter-spacing: -0.01em; }
+  .sub { font: 12px/1.4 var(--mono); color: var(--muted); }
+
+  h2 { font: 400 12px/1 var(--mono); color: var(--muted); margin: 28px 0 10px; }
+
   .anims { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .anims button {
-    padding: 12px 8px; border: 1px solid #2a2f3d; border-radius: 10px;
-    background: #171b24; color: #e8eaf0; font-size: 0.9rem; cursor: pointer;
+    padding: 11px 8px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--panel); font-size: 14px;
   }
-  .anims button.active { background: #2f5cff; border-color: #2f5cff; font-weight: 600; }
-  .slider-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
-  .slider-row label { width: 78px; font-size: 0.85rem; color: #9aa3b8; }
-  .slider-row input { flex: 1; accent-color: #2f5cff; }
+  .anims button:hover { background: var(--control); }
+  .anims button.active {
+    border-color: var(--accent); font-weight: 600;
+    background: color-mix(in srgb, var(--accent) 16%, var(--control));
+  }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .slider-row label { width: 84px; font-size: 14px; color: var(--muted); }
+  .slider-row input { flex: 1; accent-color: var(--accent); }
+
   #grid { display: block; width: 100%; aspect-ratio: 1;
-    border: 1px solid #2a2f3d; border-radius: 8px; touch-action: none;
+    border: 1px solid var(--border); border-radius: 8px; touch-action: none;
     image-rendering: pixelated; background: #000; }
-  .tools { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+  .tools { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
   .tools button {
-    padding: 8px 14px; border: 1px solid #2a2f3d; border-radius: 8px;
-    background: #171b24; color: #e8eaf0; font-size: 0.85rem; cursor: pointer;
+    height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--control); font-size: 14px;
   }
-  .tools button.primary { background: #2f5cff; border-color: #2f5cff; font-weight: 600; }
-  #color { width: 42px; height: 36px; border: none; background: none; cursor: pointer; }
-  .swatches { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-  .swatches div { width: 26px; height: 26px; border-radius: 6px; border: 1px solid #2a2f3d; cursor: pointer; }
-  #stat { color: #7a8194; font-size: 0.75rem; margin-top: 14px; }
-  label.live { font-size: 0.85rem; color: #9aa3b8; display: flex; align-items: center; gap: 6px; }
+  .tools button:hover:not(:disabled) { background: var(--control-hover); }
+  /* The primary action is Tape, the house signal: one colour for "do this"
+     across the product line. */
+  .tools button.primary { background: var(--signal); border-color: var(--signal); color: var(--on-signal); font-weight: 600; }
+  .tools button.primary:hover:not(:disabled) { background: var(--signal-strong); border-color: var(--signal-strong); }
+  #color { width: 44px; height: 36px; padding: 2px; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--control); cursor: pointer; }
+  #color::-webkit-color-swatch-wrapper { padding: 0; }
+  #color::-webkit-color-swatch { border: none; border-radius: 4px; }
+  #color::-moz-color-swatch { border: none; border-radius: 4px; }
+  .swatches { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .swatches div { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; }
+  label.live { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  label.live input { accent-color: var(--accent); }
   .txt {
     width: 100%; padding: 10px 12px; margin: 4px 0;
-    border: 1px solid #2a2f3d; border-radius: 8px;
-    background: #171b24; color: #e8eaf0; font-size: 0.9rem;
+    border: 1px solid var(--border); border-radius: 7px;
+    background: var(--control); font-size: 15px;
   }
-  #wifiinfo { color: #7a8194; font-size: 0.8rem; margin-bottom: 6px; }
-  #fwinfo { color: #7a8194; font-size: 0.8rem; margin-bottom: 6px; }
+  .txt::placeholder { color: var(--muted); }
+  .txt:focus { outline: none; border-color: var(--accent); }
+  #wifiinfo, #fwinfo { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+
+  footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    margin-top: 32px; padding-top: 12px; border-top: 1px solid var(--border);
+    font: 11px/1.5 var(--mono); color: var(--muted); }
+  footer a { color: inherit; text-decoration: none; }
+  footer a:hover { color: var(--accent); }
 </style>
 </head>
 <body>
-  <h1>LED Panel</h1>
-  <div class="sub">32 &times; 32 &middot; ESP32-S3</div>
+  <header>
+    <img src="/icon.svg" alt="">
+    <div>
+      <h1>Mosaik</h1>
+      <div class="sub">32 &times; 32 &middot; 1024 pixels</div>
+    </div>
+  </header>
 
-  <h2>Animations</h2>
+  <h2>animations</h2>
   <div class="anims" id="anims"></div>
 
-  <h2>Settings</h2>
+  <h2>settings</h2>
   <div class="slider-row">
-    <label>Brightness</label>
+    <label for="brightness">Brightness</label>
     <input type="range" id="brightness" min="5" max="255" value="160">
   </div>
   <div class="slider-row">
-    <label>Speed</label>
+    <label for="speed">Speed</label>
     <input type="range" id="speed" min="16" max="255" value="128">
   </div>
 
-  <h2>Pixel Art</h2>
+  <h2>pixel art</h2>
   <canvas id="grid" width="32" height="32"></canvas>
   <div class="swatches" id="swatches"></div>
   <div class="tools">
-    <input type="color" id="color" value="#ff2040">
+    <input type="color" id="color" value="#ff2040" aria-label="Paint colour">
     <button id="fill">Fill</button>
     <button id="clear">Clear</button>
     <button id="loadimg">Image&hellip;</button>
@@ -78,23 +143,26 @@
     <input type="file" id="file" accept="image/*" hidden>
   </div>
 
-  <h2>WiFi</h2>
+  <h2>wifi</h2>
   <div id="wifiinfo">&hellip;</div>
   <input class="txt" id="ssid" placeholder="Network name (SSID)" maxlength="32"
          autocapitalize="off" autocorrect="off" autocomplete="off">
   <input class="txt" id="wpass" type="password" placeholder="Password" maxlength="64">
   <div class="tools">
-    <button id="wifisave" class="primary">Save &amp; restart panel</button>
+    <button id="wifisave" class="primary">Save &amp; restart</button>
   </div>
 
-  <h2>Firmware</h2>
+  <h2>firmware</h2>
   <div id="fwinfo">&hellip;</div>
   <div class="tools">
     <button id="otabtn">Update firmware&hellip;</button>
     <input type="file" id="otafile" accept=".bin" hidden>
   </div>
 
-  <div id="stat">connecting&hellip;</div>
+  <footer>
+    <span id="stat">connecting&hellip;</span>
+    <a href="https://sheidesigns.com" target="_blank" rel="noopener">a shei designs project</a>
+  </footer>
 
 <script>
 'use strict';
@@ -105,7 +173,7 @@ let pixels = new Uint8Array(W * H * 3);
 let erase = false;
 
 const SWATCHES = ['#ff2040','#ff8000','#ffd000','#30ff40','#00e0ff','#2f5cff',
-                  '#b040ff','#ff40c0','#ffffff','#000000'];
+                  '#c414ff','#ff40c0','#ffffff','#000000'];
 SWATCHES.forEach(c => {
   const d = document.createElement('div');
   d.style.background = c;
@@ -248,15 +316,15 @@ async function refresh(full) {
 }
 
 // ---- wifi provisioning ----
-let hostname = 'ledpanel';
+let hostname = 'mosaik';
 
 async function loadWifi() {
   try {
     const w = await (await fetch('/api/wifi')).json();
     hostname = w.hostname || hostname;
     $('wifiinfo').textContent = w.mode === 'ap'
-      ? 'Access-point mode — the panel is not on your WiFi yet. Enter your network below.'
-      : `Connected to "${w.ssid}" — ${w.ip} · http://${w.hostname}.local`;
+      ? 'Access-point mode: Mosaik is not on your WiFi yet. Enter your network below.'
+      : `Connected to "${w.ssid}" · ${w.ip} · http://${w.hostname}.local`;
     if (w.ssid && !$('ssid').value) $('ssid').value = w.ssid;
   } catch (e) {}
 }
@@ -274,10 +342,10 @@ $('wifisave').onclick = async () => {
       body: JSON.stringify({ ssid, password: pass }) });
     if (!r.ok) { $('wifiinfo').textContent = 'Rejected: ' + await r.text(); return; }
     $('wifiinfo').textContent = ssid
-      ? `Saved. The panel is restarting and joining "${ssid}" — ` +
-        `reconnect your phone to that network, then open http://${hostname}.local`
-      : 'Cleared. The panel is restarting.';
-  } catch (e) { $('wifiinfo').textContent = 'Could not reach the panel.'; }
+      ? `Saved. Mosaik is restarting and joining "${ssid}". ` +
+        `Reconnect your phone to that network, then open http://${hostname}.local`
+      : 'Cleared. Mosaik is restarting.';
+  } catch (e) { $('wifiinfo').textContent = 'Could not reach Mosaik.'; }
 };
 
 // ---- firmware update ----
@@ -288,7 +356,7 @@ $('otafile').onchange = e => {
   const f = e.target.files[0];
   e.target.value = '';
   if (!f) return;
-  if (!confirm(`Flash "${f.name}" (${(f.size/1024).toFixed(0)} KB) to the panel?`)) return;
+  if (!confirm(`Flash "${f.name}" (${(f.size/1024).toFixed(0)} KB) to Mosaik?`)) return;
 
   otaBusy = true;
   $('otabtn').disabled = true;
@@ -301,7 +369,7 @@ $('otafile').onchange = e => {
   };
   xhr.onload = () => {
     if (xhr.status === 200) {
-      info('Flashed. The panel is restarting — this page reloads in 15 s.');
+      info('Flashed. Mosaik is restarting; this page reloads in 15 s.');
       setTimeout(() => location.reload(), 15000);
     } else {
       info('Update rejected: ' + xhr.responseText);
@@ -310,7 +378,7 @@ $('otafile').onchange = e => {
     }
   };
   xhr.onerror = () => {
-    info('Upload failed — the panel is unchanged. Check the connection and retry.');
+    info('Upload failed and nothing was changed. Check the connection and retry.');
     otaBusy = false;
     $('otabtn').disabled = false;
   };

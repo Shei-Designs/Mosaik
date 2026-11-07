@@ -24,11 +24,50 @@ static const char* TAG = "http";
 extern "C" {
 extern const char index_html_start[] asm("_binary_index_html_start");
 extern const char index_html_end[] asm("_binary_index_html_end");
+extern const char icon_svg_start[] asm("_binary_icon_svg_start");
+extern const char icon_svg_end[] asm("_binary_icon_svg_end");
+extern const char icon_180_png_start[] asm("_binary_icon_180_png_start");
+extern const char icon_180_png_end[] asm("_binary_icon_180_png_end");
+extern const char inter_400_woff2_start[] asm("_binary_inter_400_woff2_start");
+extern const char inter_400_woff2_end[] asm("_binary_inter_400_woff2_end");
+extern const char inter_600_woff2_start[] asm("_binary_inter_600_woff2_start");
+extern const char inter_600_woff2_end[] asm("_binary_inter_600_woff2_end");
+extern const char space_grotesk_500_woff2_start[] asm("_binary_space_grotesk_500_woff2_start");
+extern const char space_grotesk_500_woff2_end[] asm("_binary_space_grotesk_500_woff2_end");
+extern const char jetbrains_mono_400_woff2_start[] asm("_binary_jetbrains_mono_400_woff2_start");
+extern const char jetbrains_mono_400_woff2_end[] asm("_binary_jetbrains_mono_400_woff2_end");
 }
 
 static esp_err_t root_get(httpd_req_t* req) {
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, index_html_start, index_html_end - index_html_start - 1);
+}
+
+// Static files embedded in flash: the brand fonts (served locally, since in
+// access-point mode the phone has no internet) and the Mosaik tile icon.
+// They only change with a firmware update, which reloads the page anyway,
+// so browsers may cache them for a day.
+struct Asset {
+    const char* uri;
+    const char* type;
+    const char* start;
+    const char* end;
+};
+
+static const Asset kAssets[] = {
+    {"/icon.svg", "image/svg+xml", icon_svg_start, icon_svg_end},
+    {"/icon-180.png", "image/png", icon_180_png_start, icon_180_png_end},
+    {"/fonts/inter-400.woff2", "font/woff2", inter_400_woff2_start, inter_400_woff2_end},
+    {"/fonts/inter-600.woff2", "font/woff2", inter_600_woff2_start, inter_600_woff2_end},
+    {"/fonts/space-grotesk-500.woff2", "font/woff2", space_grotesk_500_woff2_start, space_grotesk_500_woff2_end},
+    {"/fonts/jetbrains-mono-400.woff2", "font/woff2", jetbrains_mono_400_woff2_start, jetbrains_mono_400_woff2_end},
+};
+
+static esp_err_t asset_get(httpd_req_t* req) {
+    const Asset* a = static_cast<const Asset*>(req->user_ctx);
+    httpd_resp_set_type(req, a->type);
+    httpd_resp_set_hdr(req, "Cache-Control", "max-age=86400");
+    return httpd_resp_send(req, a->start, a->end - a->start);
 }
 
 static esp_err_t status_get(httpd_req_t* req) {
@@ -162,7 +201,7 @@ static void restart_soon() {
     }
 }
 
-// POST /api/ota  body: raw application image (build/led_panel.bin).
+// POST /api/ota  body: raw application image (build/mosaik.bin).
 // Writes it to the inactive app slot, verifies it, marks it bootable and
 // restarts. If the new image fails to boot, the bootloader rolls back.
 static esp_err_t ota_post(httpd_req_t* req) {
@@ -220,6 +259,7 @@ void http_start() {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.stack_size = 8192;
     cfg.lru_purge_enable = true;
+    cfg.max_uri_handlers = 16;
 
     httpd_handle_t server = nullptr;
     ESP_ERROR_CHECK(httpd_start(&server, &cfg));
@@ -234,6 +274,11 @@ void http_start() {
         {.uri = "/api/ota", .method = HTTP_POST, .handler = ota_post, .user_ctx = nullptr},
     };
     for (auto& r : routes) {
+        ESP_ERROR_CHECK(httpd_register_uri_handler(server, &r));
+    }
+    for (auto& a : kAssets) {
+        httpd_uri_t r = {.uri = a.uri, .method = HTTP_GET, .handler = asset_get,
+                         .user_ctx = const_cast<Asset*>(&a)};
         ESP_ERROR_CHECK(httpd_register_uri_handler(server, &r));
     }
     ESP_LOGI(TAG, "http server started");

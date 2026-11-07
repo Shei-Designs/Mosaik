@@ -19,3 +19,6 @@ compile_commands.json
 # OS cruft
 .DS_Store
 Thumbs.db
+
+# Brand fonts fetched by docs/brand/draw.py
+docs/brand/.fonts/

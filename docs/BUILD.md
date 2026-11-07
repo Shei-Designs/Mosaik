@@ -1,6 +1,6 @@
-# Build Instructions
+# Mosaik: Build Instructions
 
-How to put together the 32x32 panel. Get all the parts in the
+How to build a Mosaik. Get all the parts in the
 [Bill of Materials](BOM.md) first; part names below match the STL
 filenames in [`3D_print_assets/`](../3D_print_assets).
 
@@ -150,7 +150,7 @@ The firmware limits brightness so that each frame stays within
 `PANEL_MAX_CURRENT_MA` (default **10 A**). Full white on all 1024 LEDs
 would need about 61 A, more than the LRS-200-5's 40 A rating, so the
 limiter must stay enabled. If your power wiring is sized for it, you can
-raise the budget in `idf.py menuconfig` → *LED Panel Configuration*. Keep
+raise the budget in `idf.py menuconfig` → *Mosaik Configuration*. Keep
 it well below 40 A.
 
 ## 7. Close up the back
@@ -167,12 +167,12 @@ it well below 40 A.
 1. Power up. The panel starts the last-selected animation (Plasma on first
    boot).
 2. Because no WiFi is configured yet, it opens an access point called
-   **`LED-Panel`** (password `ledpanel123`).
+   **`Mosaik`** (password `mosaik123`).
 3. Join it from your phone and open `http://192.168.4.1`.
 4. Under **WiFi**, enter your network name and password, then tap
    *Save & restart panel*.
 5. Reconnect your phone to your own WiFi and open
-   **`http://ledpanel.local`**.
+   **`http://mosaik.local`**.
 
 ## 9. Check the mapping
 

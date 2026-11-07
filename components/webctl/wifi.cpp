@@ -130,7 +130,7 @@ void wifi_start() {
 
     ESP_ERROR_CHECK(mdns_init());
     mdns_hostname_set(CONFIG_PANEL_HOSTNAME);
-    mdns_instance_name_set("32x32 LED Panel");
+    mdns_instance_name_set("Mosaik");
     mdns_service_add(nullptr, "_http", "_tcp", 80, nullptr, 0);
     ESP_LOGI(TAG, "reachable at http://%s.local", CONFIG_PANEL_HOSTNAME);
 }

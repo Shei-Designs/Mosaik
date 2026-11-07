@@ -1,6 +1,6 @@
-# Bill of Materials
+# Mosaik: Bill of Materials
 
-Everything needed for one 32x32 panel (320 x 320 mm). See
+Everything needed to build one Mosaik (32 × 32 pixels, 320 × 320 mm). See
 [BUILD.md](BUILD.md) for assembly.
 
 ## Electronics
