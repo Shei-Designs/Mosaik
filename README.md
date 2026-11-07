@@ -4,6 +4,24 @@ Firmware for a 32x32 WS2812B matrix built from four chained AZ-Delivery
 8x32 flex panels, driven by an ESP32-S3. Controlled from a phone via a web
 UI served by the chip itself.
 
+<p align="center">
+  <img src="docs/images/webui-animations.png" width="32%" alt="Animation picker with brightness and speed sliders">
+  <img src="docs/images/webui-pixel-art.png" width="32%" alt="32x32 pixel-art editor">
+  <img src="docs/images/webui-wifi-firmware.png" width="32%" alt="WiFi setup and firmware update">
+</p>
+
+## Hardware
+
+- 4x WS2812B 8x32 flexible LED panels (1024 LEDs, 320 x 320 mm total)
+- Mean Well LRS-200-5 power supply (5 V / 40 A)
+- ESP32-S3-DevKitC-1
+- IEC C14 panel-mount mains inlet
+- 3D-printed PLA frame, light grid and diffusers (STLs in
+  [`3D_print_assets/`](3D_print_assets)), M3/M4 screws
+  and PLA glue
+
+**[Bill of Materials](docs/BOM.md)** · **[Build Instructions](docs/BUILD.md)**
+
 ## Features
 
 - **Animation engine** running at ~30 FPS (the physical limit of 1024
@@ -43,6 +61,10 @@ UI served by the chip itself.
   falls back to the previous firmware.
 
 ## Building
+
+Requires [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32s3/get-started/)
+v5.4. The `led_strip` and mDNS components are fetched automatically on the
+first build.
 
 ```sh
 source ~/esp/esp-idf/export.sh
@@ -154,3 +176,7 @@ components/webctl/     WiFi + mDNS + HTTP server + embedded web UI
 `step()` receives *virtual* milliseconds — time scaled by the user's speed
 slider — so pace all motion from that value and it will respond to the
 speed control for free.
+
+## License
+
+[MIT](LICENSE). Covers the firmware and the 3D-printable parts.

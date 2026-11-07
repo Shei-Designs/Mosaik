@@ -14,3 +14,8 @@ managed_components/
 .vscode/
 .idea/
 compile_commands.json
+.playwright-mcp/
+
+# OS cruft
+.DS_Store
+Thumbs.db
